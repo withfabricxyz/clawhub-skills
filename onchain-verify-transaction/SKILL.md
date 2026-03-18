@@ -1,8 +1,8 @@
 ---
 name: onchain-verify-transaction
 description: Simulate an EVM transaction via Tenderly before execution. Use as a pre-execution safety check to verify that a transaction's calldata does what it claims — which tokens move, in what amounts, and to which addresses. Designed to be called by other skills before sending any onchain transaction.
-version: 0.1.0
-metadata: {"openclaw":{"emoji":"🔍","primaryEnv":"TENDERLY_NODE_ACCESS_KEY"}}
+version: 0.1.1
+metadata: {"openclaw":{"emoji":"🔍","primaryEnv":"TENDERLY_NODE_ACCESS_KEY","requires":{"env":["TENDERLY_NODE_ACCESS_KEY"]}}}
 ---
 
 # Onchain Verify Transaction
@@ -31,15 +31,15 @@ Obtain a key from [Tenderly](https://tenderly.co) — the free tier supports app
 
 ## Supported chains
 
-The Tenderly gateway uses a per-chain subdomain. Route to the correct endpoint based on the transaction's `chainId`:
+The Tenderly gateway uses a per-chain subdomain. Route to the correct endpoint based on the transaction's `chainId`. The access key is passed as a header — do not embed it in the URL:
 
 | Chain | chainId | Endpoint |
 | --- | --- | --- |
-| Base | `8453` | `https://base.gateway.tenderly.co/$TENDERLY_NODE_ACCESS_KEY` |
-| Ethereum | `1` | `https://mainnet.gateway.tenderly.co/$TENDERLY_NODE_ACCESS_KEY` |
-| Optimism | `10` | `https://optimism.gateway.tenderly.co/$TENDERLY_NODE_ACCESS_KEY` |
-| Arbitrum One | `42161` | `https://arbitrum.gateway.tenderly.co/$TENDERLY_NODE_ACCESS_KEY` |
-| Polygon | `137` | `https://polygon.gateway.tenderly.co/$TENDERLY_NODE_ACCESS_KEY` |
+| Base | `8453` | `https://base.gateway.tenderly.co` |
+| Ethereum | `1` | `https://mainnet.gateway.tenderly.co` |
+| Optimism | `10` | `https://optimism.gateway.tenderly.co` |
+| Arbitrum One | `42161` | `https://arbitrum.gateway.tenderly.co` |
+| Polygon | `137` | `https://polygon.gateway.tenderly.co` |
 
 If the `chainId` is not in this list, skip simulation, warn the user that the chain is unsupported, and require explicit confirmation before proceeding.
 
@@ -64,10 +64,11 @@ For cross-chain swaps, `chainId` refers to the **source chain** — the chain wh
 ### Request
 
 ```bash
-TENDERLY_URL="https://base.gateway.tenderly.co/$TENDERLY_NODE_ACCESS_KEY"
+TENDERLY_URL="https://base.gateway.tenderly.co"
 
 curl -sS -X POST "$TENDERLY_URL" \
   -H "Content-Type: application/json" \
+  -H "X-Access-Key: $TENDERLY_NODE_ACCESS_KEY" \
   -d '{
     "jsonrpc": "2.0",
     "id": 1,

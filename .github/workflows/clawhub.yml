@@ -1,0 +1,65 @@
+name: ClawHub
+
+on:
+  pull_request:
+    paths:
+      - '*/SKILL.md'
+  push:
+    branches:
+      - main
+    paths:
+      - '*/SKILL.md'
+
+jobs:
+  check-version:
+    name: Version bump check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fail if version was not bumped
+        run: |
+          CHANGED=$(git diff --name-only origin/main...HEAD -- '*/SKILL.md')
+          for SKILL_FILE in $CHANGED; do
+            BASE=$(git show origin/main:$SKILL_FILE 2>/dev/null | grep '^version:' | awk '{print $2}' || echo "new")
+            PR=$(grep '^version:' $SKILL_FILE | awk '{print $2}')
+            echo "$SKILL_FILE: main=$BASE → PR=$PR"
+            if [ "$BASE" = "$PR" ]; then
+              echo "::error file=$SKILL_FILE::$SKILL_FILE was changed but version was not bumped (still $PR). Update the version field before merging."
+              exit 1
+            fi
+          done
+
+  publish:
+    name: Publish to ClawHub
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Install clawhub CLI
+        run: npm install -g clawhub
+
+      - name: Authenticate
+        run: clawhub login --token ${{ secrets.CLAWHUB_TOKEN }}
+
+      - name: Publish changed skills
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD -- '*/SKILL.md')
+          for SKILL_FILE in $CHANGED; do
+            SKILL_DIR=$(dirname $SKILL_FILE)
+            SLUG=$(grep '^name:' $SKILL_FILE | head -1 | awk '{print $2}')
+            VERSION=$(grep '^version:' $SKILL_FILE | awk '{print $2}')
+            NAME=$(grep '^# ' $SKILL_FILE | head -1 | sed 's/^# //')
+            echo "Publishing $SLUG v$VERSION from $SKILL_DIR"
+            clawhub --no-input publish $SKILL_DIR/ \
+              --slug "$SLUG" \
+              --name "$NAME" \
+              --version "$VERSION" \
+              --tags latest
+          done

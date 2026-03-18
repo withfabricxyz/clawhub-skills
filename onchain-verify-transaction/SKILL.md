@@ -1,6 +1,6 @@
 ---
 name: onchain-verify-transaction
-description: Simulate an EVM transaction via Tenderly before execution. Use as a pre-execution safety check to verify that a transaction's calldata does what it claims — which tokens move, in what amounts, and to which addresses. Designed to be called by other skills before sending any onchain transaction.
+description: Verify an EVM transaction's calldata via Tenderly before signing. Confirms which tokens move, in what amounts, and to which addresses. Designed to be called by other skills as a pre-execution safety gate.
 version: 0.1.2
 metadata: {"openclaw":{"emoji":"🔍","primaryEnv":"TENDERLY_NODE_ACCESS_KEY","requires":{"env":["TENDERLY_NODE_ACCESS_KEY"]}}}
 ---
@@ -15,9 +15,9 @@ This skill should be invoked **before any onchain transaction is sent** when:
 
 - A transaction payload was produced by an external API or untrusted source
 - The calldata is opaque (e.g. a raw `data` hex string from a swap router)
-- The user has not explicitly waived simulation
+- The user has not explicitly waived verification
 
-If this skill is not installed, calling skills should warn the user that pre-execution simulation is unavailable and ask for explicit confirmation before proceeding.
+If this skill is not installed, calling skills should warn the user that pre-execution verification is unavailable and ask for explicit confirmation before proceeding.
 
 ## Setup
 
@@ -41,11 +41,11 @@ The Tenderly gateway uses a per-chain subdomain. Route to the correct endpoint b
 | Arbitrum One | `42161` | `https://arbitrum.gateway.tenderly.co` |
 | Polygon | `137` | `https://polygon.gateway.tenderly.co` |
 
-If the `chainId` is not in this list, skip simulation, warn the user that the chain is unsupported, and require explicit confirmation before proceeding.
+If the `chainId` is not in this list, skip verification, warn the user that the chain is unsupported, and require explicit confirmation before proceeding.
 
 > Add new entries as additional chains become supported.
 
-## Simulate a transaction
+## Verify a transaction
 
 ### Input
 
@@ -59,7 +59,7 @@ The calling skill provides a transaction payload with the following fields:
 | `value` | hex string | Native token value (e.g. `"0x0"`) |
 | `chainId` | integer | Used to select the correct Tenderly endpoint |
 
-For cross-chain swaps, `chainId` refers to the **source chain** — the chain where the transaction is sent. Simulate the outbound leg only.
+For cross-chain swaps, `chainId` refers to the **source chain** — the chain where the transaction is sent. Verify the outbound leg only.
 
 ### Request
 
@@ -94,7 +94,7 @@ curl -sS -X POST "$TENDERLY_URL" \
 
 ### Verification logic
 
-After simulation, check the following before approving execution:
+After Tenderly simulation, check the following before approving execution:
 
 1. **Token destination** — do output tokens land in the expected recipient address? Flag any tokens going to an unexpected address.
 2. **Token identity** — is the output token what was requested? Flag substitutions.
@@ -107,8 +107,8 @@ If any check fails, **stop and surface the discrepancy clearly**. Do not proceed
 ## Narration
 
 ```
-"Simulating transaction on Base via Tenderly..."
-"Simulation complete. Asset changes:"
+"Verifying transaction on Base via Tenderly..."
+"Verification complete. Asset changes:"
 "  → Send 5 USDC from 0xYour... to 0xRouter..."
 "  ← Receive 0.00242 WETH at 0xYour..."
 "All checks passed. Proceeding to execution."
@@ -117,7 +117,7 @@ If any check fails, **stop and surface the discrepancy clearly**. Do not proceed
 If a check fails:
 
 ```
-"Simulation flagged an issue:"
+"Verification flagged an issue:"
 "  Output token destination is 0xUnexpected... — expected 0xYour..."
 "Do not proceed until this is resolved. Aborting."
 ```
@@ -126,9 +126,9 @@ If a check fails:
 
 | Condition | Action |
 | --- | --- |
-| `TENDERLY_NODE_ACCESS_KEY` not set | Warn that simulation is unavailable; require explicit user confirmation before proceeding |
-| `chainId` not in supported list | Warn that chain is unsupported for simulation; require explicit user confirmation |
-| Tenderly returns an error | Surface the error message; treat as simulation failure and require confirmation |
-| Rate limit hit (HTTP 429) | Warn the user; do not retry automatically; require confirmation to proceed without simulation |
-| Simulation passes all checks | Return control to the calling skill to proceed with execution |
-| Simulation fails a check | Halt; surface the specific discrepancy; do not execute |
+| `TENDERLY_NODE_ACCESS_KEY` not set | Warn that verification is unavailable; require explicit user confirmation before proceeding |
+| `chainId` not in supported list | Warn that chain is unsupported for verification; require explicit user confirmation |
+| Tenderly returns an error | Surface the error message; treat as verification failure and require confirmation |
+| Rate limit hit (HTTP 429) | Warn the user; do not retry automatically; require confirmation to proceed without verification |
+| Verification passes all checks | Return control to the calling skill to proceed with execution |
+| Verification fails a check | Halt; surface the specific discrepancy; do not execute |

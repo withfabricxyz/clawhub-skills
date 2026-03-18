@@ -1,7 +1,7 @@
 ---
 name: onchain-verify-transaction
 description: Simulate an EVM transaction via Tenderly before execution. Use as a pre-execution safety check to verify that a transaction's calldata does what it claims — which tokens move, in what amounts, and to which addresses. Designed to be called by other skills before sending any onchain transaction.
-version: 0.1.1
+version: 0.1.2
 metadata: {"openclaw":{"emoji":"🔍","primaryEnv":"TENDERLY_NODE_ACCESS_KEY","requires":{"env":["TENDERLY_NODE_ACCESS_KEY"]}}}
 ---
 
@@ -43,7 +43,7 @@ The Tenderly gateway uses a per-chain subdomain. Route to the correct endpoint b
 
 If the `chainId` is not in this list, skip simulation, warn the user that the chain is unsupported, and require explicit confirmation before proceeding.
 
-> This list will expand as spanDEX adds cross-chain support. Add new entries as chains become available.
+> Add new entries as additional chains become supported.
 
 ## Simulate a transaction
 

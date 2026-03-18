@@ -1,7 +1,7 @@
 ---
 name: onchain-verify-transaction
 description: Verify an EVM transaction's calldata via Tenderly before signing. Confirms which tokens move, in what amounts, and to which addresses. Designed to be called by other skills as a pre-execution safety gate.
-version: 0.1.2
+version: 0.1.3
 metadata: {"openclaw":{"emoji":"🔍","primaryEnv":"TENDERLY_NODE_ACCESS_KEY","requires":{"env":["TENDERLY_NODE_ACCESS_KEY"]}}}
 ---
 
